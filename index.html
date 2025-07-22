@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dolphins Quiz</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+        input[type="text"] { width: 100%; padding: 8px; margin: 10px 0; }
+        button { padding: 8px 16px; }
+    </style>
+</head>
+<body>
+<h2>Lesson: Dolphins</h2>
+
+<p><strong>Where do dolphins live?</strong></p>
+
+<form id="quizForm">
+    <label><input type="radio" name="choice" value="In the ocean"> In the ocean</label><br>
+    <label><input type="radio" name="choice" value="In the desert"> In the desert</label><br>
+    <label><input type="radio" name="choice" value="In the mountains"> In the mountains</label><br>
+    <label><input type="radio" name="choice" value="In lakes"> In lakes</label><br>
+
+    <p>Optional: Your own answer</p>
+    <input type="text" id="customAnswer" placeholder="Type your answer..."><br><br>
+
+    <button type="button" onclick="submitAnswer()">Submit</button>
+</form>
+
+<p id="confirmation" style="color: green;"></p>
+
+<script>
+    function submitAnswer() {
+        const selected = document.querySelector('input[name="choice"]:checked');
+        const custom = document.getElementById('customAnswer').value.trim();
+        const choice = selected ? selected.value : "No choice selected";
+        const finalAnswer = custom ? `${choice} (Custom: ${custom})` : choice;
+
+        const correctAnswer = "In the ocean";
+        const isCorrect = custom
+                ? custom.toLowerCase().includes("ocean")
+                : choice === correctAnswer;
+
+        document.getElementById("confirmation").textContent =
+                `Answer submitted: ${finalAnswer} (${isCorrect ? "Correct" : "Incorrect"})`;
+        const confirmation = document.getElementById("confirmation");
+
+        confirmation.textContent = isCorrect
+                ? `✅ Correct! You answered: ${finalAnswer}`
+                : `❌ Incorrect. You answered: ${finalAnswer}. The correct answer is: "${correctAnswer}"`;
+
+        confirmation.style.color = isCorrect ? "green" : "red";
+
+        const statement = {
+            id: crypto.randomUUID(),
+            actor: {
+                name: "John Doe",
+                mbox: "mailto:john@example.com"
+            },
+            verb: {
+                id: isCorrect ? "http://adlnet.gov/expapi/verbs/completed" : "http://adlnet.gov/expapi/verbs/failed",
+                display: { "en-US": isCorrect ? "completed" : "failed" }
+            },
+            object: {
+                id: "http://example.com/activity/your-button-action",
+                objectType: "Activity",
+                definition: {
+                    name: { "en-US": "Complete Button" },
+                    description: { "en-US": "User clicked the complete button." },
+                    type: "http://adlnet.gov/expapi/activities/course",
+                }
+            },
+            result: {
+                response: finalAnswer,
+                success: isCorrect,
+                score: {
+                    scaled: isCorrect ? 1.0 : 0.0
+                }
+            }
+        };
+
+        const referrer = document.referrer;
+        const baseUrl = new URL(referrer).origin;
+        const contentProgressId = new URLSearchParams(window.location.search).get("content_progress");
+        const queryParams = new URLSearchParams({
+            content_progress: contentProgressId
+        });
+        fetch(`${baseUrl}/xAPI/statements?${queryParams.toString()}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "x-experience-api-version": "1.0.0"
+            },
+            body: JSON.stringify(statement)
+        }).then(response => {
+            if (!response.ok) throw new Error("Failed to send xAPI statement");
+        }).catch(err => console.error("xAPI error:", err));
+    }
+</script>
+</body>
+</html>
